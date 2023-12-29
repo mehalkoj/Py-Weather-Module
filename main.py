@@ -76,7 +76,7 @@ class Weather:
             return print("Something Went Wrong - ", e)
 
 
-
+# Loops daily data and inserts it into db
     def handledailydata(self, dailyendpoint, data):
         try:
             x = self.dbinsertdaily
@@ -88,28 +88,29 @@ class Weather:
                 nighticon = i['Night']['Icon']
                 dayprecip = i['Day']['HasPrecipitation']
                 nightprecip = i['Night']['HasPrecipitation']
-                
-            daypreciptype = dayprecipinten = nightpreciptype = nightprecipinten = None
+        
+                # Checks if certain values exist so it does not give error
+                daypreciptype = dayprecipinten = nightpreciptype = nightprecipinten = None
 
-            if dayprecip:
-                daypreciptype = i['Day'].get('PrecipitationType')
-                dayprecipinten = i['Day'].get('PrecipitationIntensity')
+                if dayprecip:
+                    daypreciptype = i['Day'].get('PrecipitationType')
+                    dayprecipinten = i['Day'].get('PrecipitationIntensity')
 
-            if nightprecip:
-                nightpreciptype = i['Night'].get('PrecipitationType')
-                nightprecipinten = i['Night'].get('PrecipitationIntensity')
+                if nightprecip:
+                    nightpreciptype = i['Night'].get('PrecipitationType')
+                    nightprecipinten = i['Night'].get('PrecipitationIntensity')
 
-            x(date, mintemp, maxtemp, dayicon, nighticon, dayprecip, daypreciptype, dayprecipinten, nightprecip, nightpreciptype, nightprecipinten)
+                x(date, mintemp, maxtemp, dayicon, nighticon, dayprecip, daypreciptype, dayprecipinten, nightprecip, nightpreciptype, nightprecipinten)
 
-                
-                
-                
-
-
-                    
-                
         except Exception as e:
-            return print(e)
+            print("Error in handledailydata:", e)
+
+                
+                
+                
+
+
+
 
                 
                 

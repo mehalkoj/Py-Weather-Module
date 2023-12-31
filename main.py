@@ -105,12 +105,6 @@ class Weather:
         except Exception as e:
             print("Error in handledailydata:", e)
 
-                
-                
-                
-
-
-
 
                 
                 
@@ -170,7 +164,8 @@ class Weather:
                 return True
             else:
                 user_date = date.today()
-                date_stamp = out[0]
+                stmp = out[0]
+                date_stamp = datetime.strptime(stmp, '%Y-%m-%dT%H:%M:%S%z').date()
                 if user_date > date_stamp:
                     print("Earliest Data Is Under Threshold")
                     c.execute('''DELETE FROM DAILYWEATHER''')
@@ -251,8 +246,8 @@ def main():
 
     initialize()
 
-    apikey = "V1CdYxwnPxAwE8ZWTGGcD4EG3AkXTeAI"
-    key = "2144541"
+    apikey = input("Input API Key ")
+    key = input("Input City Key From AccuWeather ")
     a = Weather(apikey, key)
     a.getweather()
 

@@ -93,12 +93,12 @@ class Weather:
                 daypreciptype = dayprecipinten = nightpreciptype = nightprecipinten = None
 
                 if dayprecip:
-                    daypreciptype = i['Day'].get('PrecipitationType')
-                    dayprecipinten = i['Day'].get('PrecipitationIntensity')
+                    daypreciptype = i['Day']('PrecipitationType')
+                    dayprecipinten = i['Day']('PrecipitationIntensity')
 
                 if nightprecip:
-                    nightpreciptype = i['Night'].get('PrecipitationType')
-                    nightprecipinten = i['Night'].get('PrecipitationIntensity')
+                    nightpreciptype = i['Night']('PrecipitationType')
+                    nightprecipinten = i['Night']('PrecipitationIntensity')
 
                 x(date, mintemp, maxtemp, dayicon, nighticon, dayprecip, daypreciptype, dayprecipinten, nightprecip, nightpreciptype, nightprecipinten)
 

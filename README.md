@@ -7,7 +7,6 @@ At the moment it is only 12 Hour data and for the project that this is apart of 
 I still have things to work on this as well as to plan on where I want to take it.
 
 - Adding 5 Day Weather
-- Tkinter GUI Elements
 - More Tests
 
 

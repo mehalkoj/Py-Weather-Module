@@ -1,7 +1,7 @@
 import requests
 import sqlite3
 import os
-from datetime import datetime, timedelta
+from datetime import *
 
 
 path = rf"./weather.db"
@@ -17,19 +17,42 @@ class Weather:
         self.apikey = apikey
         self.key = key
 
-    def getweather(self, endpoint):
+    def getweather(self):
 
-        if self.datacheck() == True:
-            response = requests.get(endpoint + self.key + "?apikey=" + self.apikey)
+        hourlyendpoint = "http://dataservice.accuweather.com/forecasts/v1/hourly/12hour/"
+        dailyendpoint = "http://dataservice.accuweather.com/forecasts/v1/daily/5day/"
+
+        if self.hourlydatacheck() == True:
+            response = requests.get(hourlyendpoint + self.key + "?apikey=" + self.apikey)
             if response.status_code == 200:
                 data = response.json()
                 print("Recieving JSON")
-                self.handledata(data)
+                self.handlehourdata(hourlyendpoint, data)
             elif response.status_code != 200:
                 return("Error Connecting To Weather Gods")
-        elif self.datacheck() == False:
+        elif self.hourlydatacheck() == False:
             # This is if it doesnt need to connect to api to get new data (ie. data that is younger than 5 hours)
             print("Data Up To Date!")
+        
+        if self.dailydatacheck() == True:
+            response = requests.get(dailyendpoint + self.key + "?apikey=" + self.apikey)
+            if response.status_code == 200:
+                data = response.json()
+                print("Recieving JSON")
+                self.handledailydata(dailyendpoint, data)
+            elif response.status_code != 200:
+                return("Error Connecting To Weather Gods")
+        elif self.dailydatacheck() == False:
+            # This is if it doesnt need to connect to api to get new data (ie. data that is younger than 5 hours)
+            print("Data Up To Date!")
+
+
+        self.printdata()
+        
+
+
+
+
         # Should be calling a method that grabs the data that is in the table and sending it to the front end for display
         # This should happen regardless of the data check is true or false
         
@@ -37,27 +60,67 @@ class Weather:
 
 
         # Testing Purposes
-        self.printdata()
         
+        
+    def handlehourdata(self, hourlyendpoint, data):
+        try:
+            for i in data:
+                        date_time = i['DateTime']
+                        weather_icon = i['WeatherIcon']
+                        has_precip = i['HasPrecipitation']
+                        temp = i['Temperature']['Value']
+                        precip_prob = i["PrecipitationProbability"]
+                        formatted = self.dateformat(date_time)
+                        x = self.dbinserthourly(formatted, weather_icon, has_precip, temp, precip_prob)
+        except Exception as e:
+            return print("Something Went Wrong - ", e)
 
 
-    def handledata(self, data):
-        for i in data:
-                date_time = i['DateTime']
-                weather_icon = i['WeatherIcon']
-                has_precip = i['HasPrecipitation']
-                temp = i['Temperature']['Value']
-                precip_prob = i["PrecipitationProbability"]
-                formatted = self.dateformat(date_time)
-                x = self.dbinsert(formatted, weather_icon, has_precip, temp, precip_prob)
+# Loops daily data and inserts it into db
+    def handledailydata(self, dailyendpoint, data):
+        try:
+            x = self.dbinsertdaily
+            for i in data['DailyForecasts']:
+                date = i['Date']
+                mintemp = i['Temperature']['Minimum']['Value']
+                maxtemp = i['Temperature']['Maximum']['Value']
+                dayicon = i['Day']['Icon']
+                nighticon = i['Night']['Icon']
+                dayprecip = i['Day']['HasPrecipitation']
+                nightprecip = i['Night']['HasPrecipitation']
+        
+                # Checks if certain values exist so it does not give error
+                daypreciptype = dayprecipinten = nightpreciptype = nightprecipinten = None
 
+                if dayprecip:
+                    daypreciptype = i['Day']('PrecipitationType')
+                    dayprecipinten = i['Day']('PrecipitationIntensity')
+
+                if nightprecip:
+                    nightpreciptype = i['Night']('PrecipitationType')
+                    nightprecipinten = i['Night']('PrecipitationIntensity')
+
+                x(date, mintemp, maxtemp, dayicon, nighticon, dayprecip, daypreciptype, dayprecipinten, nightprecip, nightpreciptype, nightprecipinten)
+
+        except Exception as e:
+            print("Error in handledailydata:", e)
+
+
+                
                 
 
 
     def printdata(self):
-        a = c.execute('''SELECT * FROM HOURWEATHER''').fetchall()
-        for x in a:
-            print(x)
+        try:
+            a = c.execute('''SELECT * FROM HOURWEATHER''').fetchall()
+            for x in a:
+                print(x)
+        
+            b = c.execute('''SELECT * FROM DAILYWEATHER''').fetchall()
+            for s in b:
+                print(s)
+        except Exception as e:
+            print("Something Went Wrong -", e)
     
 
     def dateformat(self, date_time):
@@ -68,14 +131,9 @@ class Weather:
         formatted_date = date.strftime("%Y-%m-%d %H:%M")
         return formatted_date
     
-
-    def killweather(self):
-        c.execute('''DELETE FROM HOURWEATHER''')
-        conn.commit()
-
     
 
-    def dbinsert(self, date_time, weather_icon, has_precip, temp, precip_prob):
+    def dbinserthourly(self, date_time, weather_icon, has_precip, temp, precip_prob):
         # looping through API Data and inserting into table
         try:
             c.execute("INSERT INTO HOURWEATHER VALUES (?, ?, ?, ?, ?)", (date_time, weather_icon, has_precip, temp, precip_prob))
@@ -86,23 +144,54 @@ class Weather:
             return print("ERROR: Something Went Wrong -", e)
 
 
+    def dbinsertdaily(self, date, mintemp, maxtemp, dayicon, nighticon, dayprecip, nightprecip, daypreciptype=None, dayprecipinten=None,
+                                nightpreciptype=None, nightprecipinten=None):
+        # looping through API Data and inserting into table
+        try:
+            c.execute("INSERT INTO DAILYWEATHER VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (date, mintemp, maxtemp, dayicon, nighticon, dayprecip, nightprecip, daypreciptype, dayprecipinten,
+                                nightpreciptype, nightprecipinten))
+            conn.commit()
+
+        except Exception as e:
+            
+            return print("ERROR: Something Went Wrong -", e)
+
     # Checks entry in db, compares time, if earliest entry is 5 hours before the current user time, pull data.
-    def datacheck(self):
-    
-        c.execute('''SELECT Date FROM HOURWEATHER LIMIT 1''')
-        out = c.fetchone()
-        if out is None:
-            return True
-        else:
-            user_time = datetime.now()
-            data_timestamp = datetime.strptime(out[0], "%Y-%m-%d %H:%M")
-            #time_dif = user_time - data_timestamp
-            five = timedelta(hours=5)
-            if (user_time - data_timestamp) >= five:
-                self.killweather()
+    def dailydatacheck(self):
+            c.execute('''SELECT Date FROM DAILYWEATHER LIMIT 1''')
+            out = c.fetchone()
+            if out is None:
                 return True
             else:
-                return False
+                user_date = date.today()
+                stmp = out[0]
+                date_stamp = datetime.strptime(stmp, '%Y-%m-%dT%H:%M:%S%z').date()
+                if user_date > date_stamp:
+                    print("Earliest Data Is Under Threshold")
+                    c.execute('''DELETE FROM DAILYWEATHER''')
+                    conn.commit()
+                    return True
+                else:
+                    return False
+
+
+    def hourlydatacheck(self):
+            c.execute('''SELECT Date FROM HOURWEATHER LIMIT 1''')
+            out = c.fetchone()
+            if out is None:
+                return True
+            else:
+                user_time = datetime.now()
+                data_timestamp = datetime.strptime(out[0], "%Y-%m-%d %H:%M")
+                #time_dif = user_time - data_timestamp
+                five = timedelta(hours=5)
+                if (user_time - data_timestamp) >= five:
+                    c.execute('''DELETE FROM HOURWEATHER''')
+                    conn.commit()
+                    return True
+                else:
+                    return False
+
 
 
 
@@ -120,12 +209,16 @@ def createdb():
 
         dailyweathertable = """CREATE TABLE DAILYWEATHER (
                     Date VARCHAR(255) NOT NULL,
-                    TimeSet VARCHAR(255) NOT NULL,
-                    Icon INT,
-                    IconPhrase VARCHAR(255),
-                    Precipitation VARCHAR(255),
                     MinTemp REAL,
-                    MaxTemp REAL
+                    MaxTemp REAL,
+                    DayIcon INT,
+                    DayPrecipitation VARCHAR(255),
+                    DayPrecipitationType VARCHAR(255),
+                    DayPrecipitationIntensity VARCHAR(255),
+                    NightIcon INT,
+                    NightPrecipitation VARCHAR(255), 
+                    NightPrecipitationType VARCHAR(255), 
+                    NightPrecipitationIntensity VARCHAR(255)
                         )"""
         
         c.execute(dailyweathertable)
@@ -152,11 +245,11 @@ def initialize():
 def main():
 
     initialize()
-    endpoint = "http://dataservice.accuweather.com/forecasts/v1/hourly/12hour/"
-    apikey = input("Input API Key From Accuweather")
-    key = input("Input location key from Accuweather")
+
+    apikey = input("Input API Key ")
+    key = input("Input City Key From AccuWeather ")
     a = Weather(apikey, key)
-    a.getweather(endpoint)
+    a.getweather()
 
 
 main()

@@ -4,11 +4,9 @@ At the moment it is only 12 Hour data and for the project that this is apart of 
 
 
 ## Things To Do
-I still have things to work on this as well as to plan on where I want to take it.
-
-- Adding 5 Day Weather
-- More Tests
+Currently I completed my main goal with this module. Have data from the weather API pulled in for the 12 Hour forecast and the 5 day forecast. To get around the limitations of the free api (call limit).
+I implemented a way for it to only call the API data if the date / time of the current user is 5 hours ahead or a day ahead of the oldest piece of data. What is left is to do any clean up of the code including organization and bugs.
 
 
 ## What About The Other Tool
-The tool that this will be apart of is a multi tool for desktop that will have quite a few other free api's to use.
+The tool that this will be apart of is a multi tool for desktop that will be pulling in stock data, news data, and other cool little features.
